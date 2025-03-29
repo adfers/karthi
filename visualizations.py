@@ -27,8 +27,11 @@ def create_completion_gauge(percentage):
                 ]
             }
         ))
-    fig.update_layout(height=200, margin=dict(l=10, r=10, t=40, b=10))
-    return fig
+        fig.update_layout(height=200, margin=dict(l=10, r=10, t=40, b=10))
+        return fig
+    except Exception as e:
+        print(f"Error creating completion gauge: {e}")
+        return go.Figure()  # Return empty figure on error
 
 def create_weekly_progress_chart(weekly_progress):
     """Create a bar chart showing weekly progress."""
@@ -46,9 +49,16 @@ def create_weekly_progress_chart(weekly_progress):
                 textposition='auto'
             )
         ])
-    fig.update_layout(
-        title="Weekly Progress",
-        xaxis_title="Week",
+        fig.update_layout(
+            title="Weekly Progress",
+            xaxis_title="Week",
+            yaxis_title="Completed Days",
+            height=300
+        )
+        return fig
+    except Exception as e:
+        print(f"Error creating weekly progress chart: {e}")
+        return go.Figure()  # Return empty figure on error
         yaxis_title="Completed Days",
         height=300
     )
