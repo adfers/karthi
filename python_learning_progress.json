@@ -1,22 +1,14 @@
 {
-    "progress": {
-        "1": {
-            "completed": true,
-            "date_completed": "2025-03-29"
-        },
-        "2": {
-            "completed": true,
-            "date_completed": "2025-03-29"
-        },
-        "3": {
-            "completed": true,
-            "date_completed": "2025-03-29"
-        }
-    },
+    "progress": {},
     "notes": {},
     "uploads": {},
     "time_spent": {},
-    "resources_used": {
-        "1": []
+    "resources_used": {},
+    "email_settings": {
+        "enabled": true,
+        "email": "karthikeyakallakuri@gmail.com",
+        "reminder_time": "16:15",
+        "missed_day_notification": true,
+        "daily_reminder": true
     }
 }
