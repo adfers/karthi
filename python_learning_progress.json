@@ -1,7 +1,22 @@
 {
-    "progress": {},
+    "progress": {
+        "1": {
+            "completed": true,
+            "date_completed": "2025-03-29"
+        },
+        "2": {
+            "completed": true,
+            "date_completed": "2025-03-29"
+        },
+        "3": {
+            "completed": true,
+            "date_completed": "2025-03-29"
+        }
+    },
     "notes": {},
     "uploads": {},
     "time_spent": {},
-    "resources_used": {}
+    "resources_used": {
+        "1": []
+    }
 }

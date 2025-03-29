@@ -15,6 +15,7 @@ import curriculum as curr
 import data_handler as dh
 import visualizations as viz
 import utils
+import sms_notifications
 
 # Page configuration
 st.set_page_config(
@@ -128,8 +129,49 @@ if not os.path.exists(DATA_FILE):
             "notes": {},
             "uploads": {},
             "time_spent": {},
-            "resources_used": {}
+            "resources_used": {},
+            "sms_settings": {
+                "enabled": False,
+                "phone_number": "",
+                "reminder_time": "09:00",
+                "missed_day_notification": True,
+                "daily_reminder": True
+            }
         }, f, indent=4)
+
+# SMS notification checker
+def check_and_send_notifications():
+    """Check if SMS notifications need to be sent and send them if needed."""
+    # Load data with SMS settings
+    data = dh.load_data()
+    sms_settings = data.get("sms_settings", {})
+    
+    # Check if SMS notifications are enabled
+    if not sms_settings.get("enabled", False):
+        return
+    
+    # Get phone number
+    phone_number = sms_settings.get("phone_number", "")
+    if not phone_number:
+        return
+    
+    # Get current day info
+    current_day = utils.get_current_day()
+    day_info = utils.get_day_info(current_day)
+    if not day_info:
+        return
+    
+    # Get all progress data
+    progress_data = dh.get_all_progress_data()
+    
+    # Check for missed days
+    if sms_settings.get("missed_day_notification", True):
+        sms_notifications.check_for_missed_days(phone_number, progress_data, day_info)
+    
+    # Check for daily reminders
+    if sms_settings.get("daily_reminder", True):
+        reminder_time = sms_settings.get("reminder_time", "09:00")
+        sms_notifications.check_and_send_daily_reminder(phone_number, reminder_time, day_info)
 
 # Initialize data
 try:
@@ -142,6 +184,9 @@ except Exception as e:
 def main():
     # Apply custom CSS
     local_css()
+    
+    # Check for SMS notifications
+    check_and_send_notifications()
     
     # Sidebar
     with st.sidebar:
@@ -164,7 +209,7 @@ def main():
         st.subheader("Navigation")
         page = st.radio(
             "Go to:",
-            ["Dashboard", "Day Tracker", "Weekly View", "Notes & Reflections"]
+            ["Dashboard", "Day Tracker", "Weekly View", "Notes & Reflections", "SMS Settings"]
         )
         
         # Additional resources
@@ -192,6 +237,8 @@ def main():
         show_weekly_view()
     elif page == "Notes & Reflections":
         show_notes_page()
+    elif page == "SMS Settings":
+        show_sms_settings()
 
 def show_dashboard():
     """Display the main dashboard with progress visualizations."""
@@ -553,6 +600,124 @@ def show_notes_page():
         b64 = base64.b64encode(notes_text.encode()).decode()
         href = f'<a href="data:text/plain;base64,{b64}" download="python_learning_notes.txt">Download Notes</a>'
         st.markdown(href, unsafe_allow_html=True)
+
+def show_sms_settings():
+    """Display SMS notification settings."""
+    st.header("SMS Reminder Settings")
+    
+    # Get current settings from session state or initialize
+    if 'phone_number' not in st.session_state:
+        st.session_state.phone_number = ""
+    if 'sms_enabled' not in st.session_state:
+        st.session_state.sms_enabled = False
+    if 'reminder_time' not in st.session_state:
+        st.session_state.reminder_time = "09:00"  # Default 9:00 AM
+    
+    # Check if Twilio is configured
+    twilio_client = sms_notifications.setup_twilio_client()
+    twilio_phone = os.environ.get("TWILIO_PHONE_NUMBER")
+    
+    if not twilio_client or not twilio_phone:
+        st.warning("⚠️ Twilio is not configured. To enable SMS notifications, you need to set up Twilio credentials.")
+        st.info("To configure Twilio, you need to set these environment variables: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER")
+        
+        # Show example of how to get these credentials
+        with st.expander("How to get Twilio credentials"):
+            st.markdown("""
+            1. Sign up for a Twilio account at [twilio.com](https://www.twilio.com/)
+            2. Get your Account SID and Auth Token from the Twilio Console
+            3. Buy a phone number or use a trial number from Twilio
+            4. Set these values as environment variables before running the app
+            """)
+    
+    # SMS Settings form
+    with st.form("sms_settings_form"):
+        st.subheader("SMS Notification Preferences")
+        
+        # Enable/disable SMS notifications
+        sms_enabled = st.checkbox("Enable SMS notifications", value=st.session_state.sms_enabled)
+        
+        # Phone number input
+        phone_number = st.text_input(
+            "Your phone number (format: +1XXXXXXXXXX):", 
+            value=st.session_state.phone_number,
+            help="Enter your phone number in international format, starting with + and country code"
+        )
+        
+        # Reminder time
+        reminder_time = st.time_input(
+            "Daily reminder time:", 
+            value=datetime.strptime(st.session_state.reminder_time, "%H:%M").time(),
+            help="Set the time when you want to receive daily reminders"
+        )
+        
+        # Notification preferences
+        st.subheader("Notification Types")
+        missed_day_notification = st.checkbox(
+            "Notify me if I miss a day", 
+            value=True,
+            help="Send an SMS if you haven't marked a day as completed"
+        )
+        
+        daily_reminder = st.checkbox(
+            "Send daily reminders", 
+            value=True,
+            help="Send a daily reminder about today's topic"
+        )
+        
+        # Test notification button
+        submitted = st.form_submit_button("Save Settings")
+        
+        if submitted:
+            # Save settings to session state
+            st.session_state.phone_number = phone_number
+            st.session_state.sms_enabled = sms_enabled
+            st.session_state.reminder_time = reminder_time.strftime("%H:%M")
+            
+            # Save settings to data file
+            data = dh.load_data()
+            if "sms_settings" not in data:
+                data["sms_settings"] = {}
+                
+            data["sms_settings"] = {
+                "enabled": sms_enabled,
+                "phone_number": phone_number,
+                "reminder_time": reminder_time.strftime("%H:%M"),
+                "missed_day_notification": missed_day_notification,
+                "daily_reminder": daily_reminder
+            }
+            
+            dh.save_data(data)
+            st.success("SMS settings saved successfully!")
+    
+    # Test SMS button outside the form
+    if twilio_client and twilio_phone and st.session_state.phone_number and st.session_state.sms_enabled:
+        if st.button("Test SMS Notification"):
+            # Get current day info
+            current_day = utils.get_current_day()
+            day_info = utils.get_day_info(current_day)
+            
+            if day_info:
+                # Send a test message
+                test_message = f"🐍 Python Learning Tracker: This is a test message. Today's topic: {day_info['topic']}"
+                if sms_notifications.send_sms(st.session_state.phone_number, test_message):
+                    st.success("Test message sent successfully! Check your phone.")
+                else:
+                    st.error("Failed to send test message. Please check your Twilio credentials and phone number.")
+            else:
+                st.error("Could not get current day information for test message.")
+    
+    # Show information about SMS notifications
+    st.subheader("About SMS Notifications")
+    st.markdown("""
+    The Python Learning Tracker can send you SMS notifications to help you stay on track with your learning journey:
+    
+    1. **Missed Day Alerts**: Get notified if you miss a day of practice
+    2. **Daily Reminders**: Receive a reminder about the day's topic
+    3. **Streak Maintenance**: Don't break your learning streak!
+    
+    All notifications are customizable and can be turned off at any time.
+    """)
 
 if __name__ == "__main__":
     main()

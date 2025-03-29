@@ -20,7 +20,14 @@ def initialize_data():
         "notes": {},
         "uploads": {},
         "time_spent": {},
-        "resources_used": {}
+        "resources_used": {},
+        "sms_settings": {
+            "enabled": False,
+            "phone_number": "",
+            "reminder_time": "09:00",
+            "missed_day_notification": True,
+            "daily_reminder": True
+        }
     }
     
     save_data(data)
