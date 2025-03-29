@@ -6,33 +6,46 @@ import pandas as pd
 
 def create_completion_gauge(percentage):
     """Create a gauge chart showing completion percentage."""
-    fig = go.Figure(go.Indicator(
-        mode = "gauge+number",
-        value = percentage,
-        domain = {'x': [0, 1], 'y': [0, 1]},
-        gauge = {
-            'axis': {'range': [None, 100]},
-            'bar': {'color': "#4B89DC"},
-            'steps': [
-                {'range': [0, 33], 'color': "#FFE5E5"},
-                {'range': [33, 66], 'color': "#FFD6A5"},
-                {'range': [66, 100], 'color': "#CAFFBF"}
-            ]
-        }
-    ))
+    try:
+        # Ensure percentage is a valid number
+        percentage = float(percentage)
+        if not 0 <= percentage <= 100:
+            percentage = max(0, min(100, percentage))  # Clamp between 0 and 100
+            
+        fig = go.Figure(go.Indicator(
+            mode = "gauge+number",
+            value = percentage,
+            domain = {'x': [0, 1], 'y': [0, 1]},
+            title = {'text': "Completion"},
+            gauge = {
+                'axis': {'range': [None, 100]},
+                'bar': {'color': "#4B89DC"},
+                'steps': [
+                    {'range': [0, 33], 'color': "#FFE5E5"},
+                    {'range': [33, 66], 'color': "#FFD6A5"},
+                    {'range': [66, 100], 'color': "#CAFFBF"}
+                ]
+            }
+        ))
     fig.update_layout(height=200, margin=dict(l=10, r=10, t=40, b=10))
     return fig
 
 def create_weekly_progress_chart(weekly_progress):
     """Create a bar chart showing weekly progress."""
-    weeks = [f"Week {i+1}" for i in range(len(weekly_progress))]
-    fig = go.Figure(data=[
-        go.Bar(
-            x=weeks,
-            y=weekly_progress,
-            marker_color='#4B89DC'
-        )
-    ])
+    try:
+        if not weekly_progress or not isinstance(weekly_progress, (list, tuple)):
+            return go.Figure()  # Return empty figure if data is invalid
+            
+        weeks = [f"Week {i+1}" for i in range(len(weekly_progress))]
+        fig = go.Figure(data=[
+            go.Bar(
+                x=weeks,
+                y=weekly_progress,
+                marker_color='#4B89DC',
+                text=weekly_progress,
+                textposition='auto'
+            )
+        ])
     fig.update_layout(
         title="Weekly Progress",
         xaxis_title="Week",
