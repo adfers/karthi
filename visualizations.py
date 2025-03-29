@@ -6,6 +6,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 import pandas as pd
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def create_completion_gauge(percentage):
     """Create a gauge chart showing completion percentage."""
@@ -31,15 +36,18 @@ def create_completion_gauge(percentage):
         ))
         fig.update_layout(height=200, margin=dict(l=10, r=10, t=40, b=10))
         return fig
-    except Exception as e:
-        print(f"Error creating completion gauge: {str(e)}")
+    except (ValueError, TypeError) as e:
+        logger.error(f"Error creating completion gauge: {str(e)}")
         return go.Figure()
 
 def create_weekly_progress_chart(weekly_progress):
     """Create a bar chart showing weekly progress."""
     try:
-        if not weekly_progress or not isinstance(weekly_progress, (list, tuple)):
-            raise ValueError("Invalid weekly progress data")
+        if not isinstance(weekly_progress, (list, tuple)):
+            raise ValueError("Weekly progress must be a list or tuple")
+        
+        if not weekly_progress:
+            raise ValueError("Weekly progress data is empty")
             
         weeks = [f"Week {i+1}" for i in range(len(weekly_progress))]
         fig = go.Figure(data=[
@@ -59,16 +67,17 @@ def create_weekly_progress_chart(weekly_progress):
         )
         return fig
     except Exception as e:
-        print(f"Error creating weekly progress chart: {str(e)}")
+        logger.error(f"Error creating weekly progress chart: {str(e)}")
         return go.Figure()
 
 def create_progress_heatmap(progress_data):
     """Create a heatmap showing daily progress."""
     try:
         if not isinstance(progress_data, list):
-            progress_data = []
+            raise ValueError("Progress data must be a list")
 
         # Ensure we have data for all 21 days
+        progress_data = progress_data[:21]  # Truncate if too long
         while len(progress_data) < 21:
             progress_data.append({'completed': False})
 
@@ -89,16 +98,19 @@ def create_progress_heatmap(progress_data):
         )
         return fig
     except Exception as e:
-        print(f"Error creating progress heatmap: {str(e)}")
+        logger.error(f"Error creating progress heatmap: {str(e)}")
         return go.Figure()
 
 def create_time_spent_chart(progress_data):
     """Create a line chart showing time spent per day."""
     try:
-        if not progress_data or not isinstance(progress_data, list):
-            raise ValueError("Invalid progress data")
+        if not isinstance(progress_data, list):
+            raise ValueError("Progress data must be a list")
 
-        days = list(range(1, 22))
+        if not progress_data:
+            raise ValueError("Progress data is empty")
+
+        days = list(range(1, len(progress_data) + 1))
         times = [d.get('time_spent_minutes', 0) for d in progress_data]
         
         fig = go.Figure(data=go.Scatter(
@@ -115,26 +127,32 @@ def create_time_spent_chart(progress_data):
         )
         return fig
     except Exception as e:
-        print(f"Error creating time spent chart: {str(e)}")
+        logger.error(f"Error creating time spent chart: {str(e)}")
         return go.Figure()
 
 def create_streak_calendar(progress_data):
     """Create a calendar heatmap showing activity streaks."""
     try:
-        if not progress_data or not isinstance(progress_data, list):
-            raise ValueError("Invalid progress data")
+        if not isinstance(progress_data, list):
+            raise ValueError("Progress data must be a list")
+
+        if not progress_data:
+            raise ValueError("Progress data is empty")
 
         dates = []
         values = []
+        
         for day in progress_data:
-            if day.get('completion_date'):
-                try:
-                    datetime.strptime(day['completion_date'], "%Y-%m-%d")  # Validate date format
-                    dates.append(day['completion_date'])
+            try:
+                completion_date = day.get('completion_date')
+                if completion_date:
+                    # Validate date format
+                    datetime.strptime(completion_date, "%Y-%m-%d")
+                    dates.append(completion_date)
                     values.append(1)
-                except ValueError:
-                    print(f"Invalid date format: {day['completion_date']}")
-                    continue
+            except ValueError as e:
+                logger.warning(f"Invalid date format: {completion_date}")
+                continue
         
         if dates:
             df = pd.DataFrame({
@@ -150,20 +168,25 @@ def create_streak_calendar(progress_data):
             return fig
         return go.Figure()
     except Exception as e:
-        print(f"Error creating streak calendar: {str(e)}")
+        logger.error(f"Error creating streak calendar: {str(e)}")
         return go.Figure()
+
 def create_weekly_time_chart(weekly_time):
     """Create a bar chart showing time spent by week."""
     try:
         if not isinstance(weekly_time, (list, tuple)):
-            weekly_time = [0, 0, 0]  # Default empty data
+            raise ValueError("Weekly time must be a list or tuple")
         
         # Ensure we have exactly 3 weeks of data
         weekly_time = list(weekly_time)[:3]  # Take first 3 weeks
         while len(weekly_time) < 3:
-            weekly_time.append(0)  # Pad with zeros if needed
+            weekly_time.append(0)
             
         weeks = [f"Week {i+1}" for i in range(len(weekly_time))]
+        
+        # Convert minutes to hours if needed
+        weekly_time = [t if t < 100 else t/60 for t in weekly_time]  # Assume values > 100 are in minutes
+        
         fig = go.Figure(data=[
             go.Bar(
                 x=weeks,
@@ -181,5 +204,5 @@ def create_weekly_time_chart(weekly_time):
         )
         return fig
     except Exception as e:
-        print(f"Error creating weekly time chart: {e}")
+        logger.error(f"Error creating weekly time chart: {str(e)}")
         return go.Figure()
