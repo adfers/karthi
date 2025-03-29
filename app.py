@@ -29,14 +29,29 @@ st.set_page_config(
 def local_css():
     st.markdown("""
     <style>
+    /* Page background with gradient */
+    .stApp {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+    
+    /* Content area styling */
+    .block-container {
+        background-color: rgba(255, 255, 255, 0.8);
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin: 10px;
+    }
+    
     /* General styling */
     h1 {
         color: #3366CC;
-        background-color: #F0F8FF;
+        background-color: rgba(240, 248, 255, 0.8);
         padding: 15px;
         border-radius: 10px;
         text-align: center;
         margin-bottom: 20px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
     
     h2, h3 {
@@ -61,8 +76,30 @@ def local_css():
     
     /* Style the sidebar */
     section[data-testid="stSidebar"] {
-        background-color: #F0F8FF;
-        border-right: 2px solid #4B89DC;
+        background: linear-gradient(180deg, #4B89DC 0%, #2E5CB8 100%);
+        border-right: none;
+        box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Style sidebar text and elements */
+    section[data-testid="stSidebar"] .block-container {
+        background: transparent;
+        box-shadow: none;
+    }
+    
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3,
+    section[data-testid="stSidebar"] .stMarkdown p,
+    section[data-testid="stSidebar"] .stMarkdown a {
+        color: white !important;
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    section[data-testid="stSidebar"] .stNumberInput label,
+    section[data-testid="stSidebar"] .stRadio label,
+    section[data-testid="stSidebar"] .stSelectbox label {
+        color: white !important;
     }
     
     /* Button styling */
@@ -103,19 +140,33 @@ def local_css():
     
     /* Day card styling */
     .day-card {
-        background-color: #F8F9FA;
+        background-color: rgba(255, 255, 255, 0.9);
         border-left: 5px solid #4B89DC;
-        padding: 10px;
-        border-radius: 5px;
-        margin-bottom: 10px;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .day-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
     
     .resource-link {
         background-color: #E9ECEF;
-        padding: 5px 10px;
-        border-radius: 5px;
+        padding: 8px 12px;
+        border-radius: 6px;
         margin: 5px 0;
         display: inline-block;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    
+    .resource-link:hover {
+        background-color: #D1D5DA;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
     </style>
     """, unsafe_allow_html=True)
