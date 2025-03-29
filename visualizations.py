@@ -1,3 +1,4 @@
+
 """
 Module to create visualizations for the Python learning tracker.
 """
