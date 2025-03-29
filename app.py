@@ -299,9 +299,9 @@ def show_dashboard():
     st.markdown("""
     <div style="padding: 10px; border-radius: 5px; background-color: rgba(100, 149, 237, 0.2); margin-bottom: 20px;">
         <h3>Quick Access</h3>
-        <a href="https://www.online-python.com/" target="_blank" style="color: #4285f4; text-decoration: none; font-weight: bold;">
+        <a href="https://pythontutor.com/" target="_blank" style="color: #4285f4; text-decoration: none; font-weight: bold;">
             <div style="display: flex; align-items: center;">
-                <span style="margin-right: 5px;">🔗</span> Online Python Compiler - Practice Your Code Here
+                <span style="margin-right: 5px;">🔗</span> Python Tutor - Simple Online Compiler
             </div>
         </a>
     </div>
