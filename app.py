@@ -295,6 +295,18 @@ def show_dashboard():
     """Display the main dashboard with progress visualizations."""
     st.header("Learning Dashboard")
     
+    # Add Online Python Compiler link
+    st.markdown("""
+    <div style="padding: 10px; border-radius: 5px; background-color: rgba(100, 149, 237, 0.2); margin-bottom: 20px;">
+        <h3>Quick Access</h3>
+        <a href="https://www.online-python.com/" target="_blank" style="color: #4285f4; text-decoration: none; font-weight: bold;">
+            <div style="display: flex; align-items: center;">
+                <span style="margin-right: 5px;">🔗</span> Online Python Compiler - Practice Your Code Here
+            </div>
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
+    
     # Top stats in columns
     col1, col2, col3 = st.columns(3)
     
