@@ -212,18 +212,32 @@ def show_day_tracker():
             resources_used = dh.get_resources_used(day_number)
             
             for resource in resources:
-                is_checked = resource in resources_used
-                if st.checkbox(resource, value=is_checked, key=f"resource_{day_number}_{resource}"):
-                    if not is_checked:
-                        dh.mark_resource_used(day_number, resource)
-                else:
-                    if is_checked:
-                        # Remove the resource from used resources
-                        data = dh.load_data()
-                        if str(day_number) in data["resources_used"]:
-                            if resource in data["resources_used"][str(day_number)]:
-                                data["resources_used"][str(day_number)].remove(resource)
-                                dh.save_data(data)
+                resource_name = resource['name'] if isinstance(resource, dict) else resource
+                resource_key = resource_name  # Use the name as the key for checkbox
+                
+                # Check if this resource was used
+                is_checked = resource_name in resources_used
+                
+                # Create a row with checkbox and link
+                col1, col2 = st.columns([1, 3])
+                with col1:
+                    if st.checkbox("", value=is_checked, key=f"resource_{day_number}_{resource_key}"):
+                        if not is_checked:
+                            dh.mark_resource_used(day_number, resource_name)
+                    else:
+                        if is_checked:
+                            # Remove the resource from used resources
+                            data = dh.load_data()
+                            if str(day_number) in data["resources_used"]:
+                                if resource_name in data["resources_used"][str(day_number)]:
+                                    data["resources_used"][str(day_number)].remove(resource_name)
+                                    dh.save_data(data)
+                
+                with col2:
+                    if isinstance(resource, dict) and 'url' in resource:
+                        st.markdown(f"[{resource_name}]({resource['url']})")
+                    else:
+                        st.text(resource_name)
         
         with col2:
             # Completion tracking
@@ -309,8 +323,7 @@ def show_weekly_view():
             week_data = curriculum_data[i]
             st.subheader(f"Week {week_data['week']}: {week_data['title']}")
             
-            # Create a table of days
-            week_df = []
+            # Display each day in the week as an expander
             for day in week_data['days']:
                 day_num = day['day']
                 # Get completion status
@@ -319,22 +332,57 @@ def show_weekly_view():
                     if day_num <= len(progress_data):
                         day_progress = progress_data[day_num-1]
                         is_completed = day_progress.get('completed', False)
-                        completion_date = day_progress.get('completion_date', None) if is_completed else "-"
+                        completion_date = day_progress.get('completion_date', None) if is_completed else None
                     else:
                         is_completed = False
-                        completion_date = "-"
+                        completion_date = None
                 except Exception:
                     is_completed = False
-                    completion_date = "-"
+                    completion_date = None
+                
+                # Create an expander for each day
+                status_icon = "✅" if is_completed else "❌"
+                with st.expander(f"Day {day_num}: {day['topic']} {status_icon}"):
+                    st.markdown(f"**Practice Exercise:** {day['practice']}")
+                    
+                    # Resources with links
+                    st.markdown("**Resources:**")
+                    resources = day.get('resources', [])
+                    for resource in resources:
+                        if isinstance(resource, dict) and 'url' in resource:
+                            st.markdown(f"- [{resource['name']}]({resource['url']})")
+                        else:
+                            resource_name = resource['name'] if isinstance(resource, dict) else resource
+                            st.markdown(f"- {resource_name}")
+                    
+                    # Show completion status
+                    if is_completed:
+                        st.success(f"Completed on: {completion_date}")
+                    else:
+                        st.info("Not completed yet")
+                
+            # Create a table for the overview
+            week_df = []
+            for day in week_data['days']:
+                day_num = day['day']
+                # Get completion status again
+                try:
+                    progress_data = dh.get_all_progress_data()
+                    if day_num <= len(progress_data):
+                        day_progress = progress_data[day_num-1]
+                        is_completed = day_progress.get('completed', False)
+                    else:
+                        is_completed = False
+                except Exception:
+                    is_completed = False
                 
                 week_df.append({
                     "Day": day_num,
                     "Topic": day['topic'],
-                    "Practice": day['practice'],
-                    "Status": "✅ Completed" if is_completed else "❌ Incomplete",
-                    "Completed On": completion_date if is_completed else "-"
+                    "Status": "✅ Completed" if is_completed else "❌ Incomplete"
                 })
             
+            st.subheader("Week Overview")
             st.table(pd.DataFrame(week_df))
             
             # Display progress for this week
