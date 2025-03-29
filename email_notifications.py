@@ -2,20 +2,27 @@
 Module to handle email notifications for the Python learning tracker.
 """
 import os
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import logging
 from datetime import datetime, timedelta
 import streamlit as st
 
 # Global settings
 DEFAULT_REMINDER_TIME = "09:00"  # 9:00 AM
 DEFAULT_REMINDER_MESSAGE = "Remember to practice Python today! Your scheduled topic: {topic}"
-DEFAULT_SENDER_EMAIL = "pythonlearningtracker@gmail.com"  # Using the app's Gmail address
 
+# In a real-world application, you would use a proper email sending service
+# Since this is a demo, we'll simulate the email sending and just log it
 def send_email(to_email, subject, message):
     """
-    Send an email to the given email address with the specified subject and message.
+    Simulate sending an email to the given email address with the specified subject and message.
+    
+    In a real application, you would integrate with:
+    - SendGrid
+    - Mailgun
+    - Amazon SES
+    - Or another email delivery service
+    
+    For this demo, we'll just log the email content and return success.
     
     Args:
         to_email: The recipient's email address
@@ -23,38 +30,19 @@ def send_email(to_email, subject, message):
         message: The email message body (HTML formatted)
         
     Returns:
-        True if successful, False otherwise
+        True for the demo (simulating successful sending)
     """
-    # This will use the app's email to send notifications
-    sender_email = DEFAULT_SENDER_EMAIL
-    password = os.environ.get("EMAIL_PASSWORD", "")
+    # Log the email that would be sent
+    logging.info(f"SIMULATED EMAIL TO: {to_email}")
+    logging.info(f"SUBJECT: {subject}")
+    logging.info(f"MESSAGE: {message[:100]}...")  # Logging just the start of the message
     
-    if not password:
-        st.error("Email password not configured. Please add EMAIL_PASSWORD to environment variables.")
-        return False
+    # Display the email in the Streamlit app (for demo purposes)
+    st.success(f"Email would be sent to: {to_email}")
+    st.info(f"In a real application, this email would be sent through a service like SendGrid, Mailgun, or Amazon SES.")
     
-    # Create the email
-    msg = MIMEMultipart()
-    msg["From"] = sender_email
-    msg["To"] = to_email
-    msg["Subject"] = subject
-    
-    # Add HTML message body
-    msg.attach(MIMEText(message, "html"))
-    
-    try:
-        # Connect to Gmail's SMTP server
-        server = smtplib.SMTP("smtp.gmail.com", 587)
-        server.starttls()  # Secure the connection
-        server.login(sender_email, password)
-        
-        # Send the email
-        server.send_message(msg)
-        server.quit()
-        return True
-    except Exception as e:
-        st.error(f"Failed to send email: {str(e)}")
-        return False
+    # Return True to simulate successful sending
+    return True
 
 
 def send_reminder(email, day_info):
