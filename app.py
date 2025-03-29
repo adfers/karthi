@@ -24,6 +24,101 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Custom CSS for styling
+def local_css():
+    st.markdown("""
+    <style>
+    /* General styling */
+    h1 {
+        color: #3366CC;
+        background-color: #F0F8FF;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    h2, h3 {
+        color: #3366CC;
+        border-bottom: 2px solid #4B89DC;
+        padding-bottom: 5px;
+    }
+    
+    /* Styling for cards */
+    .stCard {
+        border-radius: 15px !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+    }
+    
+    /* Style the checkboxes */
+    div[data-testid="stCheckbox"] {
+        background-color: #F0F8FF;
+        padding: 5px;
+        border-radius: 5px;
+        margin-bottom: 5px;
+    }
+    
+    /* Style the sidebar */
+    section[data-testid="stSidebar"] {
+        background-color: #F0F8FF;
+        border-right: 2px solid #4B89DC;
+    }
+    
+    /* Button styling */
+    button {
+        background-color: #4B89DC !important;
+        color: white !important;
+        border-radius: 8px !important;
+    }
+    
+    /* Make links stand out */
+    a {
+        color: #4B89DC !important;
+        font-weight: bold !important;
+        text-decoration: none !important;
+    }
+    
+    a:hover {
+        text-decoration: underline !important;
+        color: #2E5CB8 !important;
+    }
+    
+    /* Completion status badges */
+    .completed-badge {
+        background-color: #28a745;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 10px;
+        font-size: 14px;
+    }
+    
+    .incomplete-badge {
+        background-color: #dc3545;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 10px;
+        font-size: 14px;
+    }
+    
+    /* Day card styling */
+    .day-card {
+        background-color: #F8F9FA;
+        border-left: 5px solid #4B89DC;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+    }
+    
+    .resource-link {
+        background-color: #E9ECEF;
+        padding: 5px 10px;
+        border-radius: 5px;
+        margin: 5px 0;
+        display: inline-block;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 # Ensure data file exists
 DATA_FILE = "python_learning_progress.json"
 if not os.path.exists(DATA_FILE):
@@ -45,6 +140,9 @@ except Exception as e:
 
 # Main app layout
 def main():
+    # Apply custom CSS
+    local_css()
+    
     # Sidebar
     with st.sidebar:
         st.title("🐍 Python Learning")
@@ -165,11 +263,20 @@ def show_dashboard():
         for day in upcoming:
             try:
                 with st.expander(f"Day {day['day']}: {day['topic']}"):
-                    st.markdown(f"**Week {day['week']}: {day['week_title']}**")
-                    st.markdown(f"**Practice:** {day['practice']}")
-                    st.markdown("**Resources:**")
-                    for resource in day['resources']:
-                        st.markdown(f"- {resource}")
+                    st.markdown(f"""<div class="day-card">
+                    <p><strong>Week {day['week']}:</strong> {day['week_title']}</p>
+                    <p><strong>Practice:</strong> {day['practice']}</p>
+                    <p><strong>Resources:</strong></p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    resources = day['resources']
+                    for resource in resources:
+                        if isinstance(resource, dict) and 'url' in resource:
+                            st.markdown(f"""<div class="resource-link"><a href="{resource['url']}" target="_blank">{resource['name']} 🔗</a></div>""", unsafe_allow_html=True)
+                        else:
+                            resource_name = resource['name'] if isinstance(resource, dict) else resource
+                            st.markdown(f"- {resource_name}")
             except (KeyError, TypeError):
                 # Skip days with missing data
                 continue
@@ -235,7 +342,7 @@ def show_day_tracker():
                 
                 with col2:
                     if isinstance(resource, dict) and 'url' in resource:
-                        st.markdown(f"[{resource_name}]({resource['url']})")
+                        st.markdown(f"""<div class="resource-link"><a href="{resource['url']}" target="_blank">{resource_name} 🔗</a></div>""", unsafe_allow_html=True)
                     else:
                         st.text(resource_name)
         
@@ -350,7 +457,7 @@ def show_weekly_view():
                     resources = day.get('resources', [])
                     for resource in resources:
                         if isinstance(resource, dict) and 'url' in resource:
-                            st.markdown(f"- [{resource['name']}]({resource['url']})")
+                            st.markdown(f"""<div class="resource-link"><a href="{resource['url']}" target="_blank">{resource['name']} 🔗</a></div>""", unsafe_allow_html=True)
                         else:
                             resource_name = resource['name'] if isinstance(resource, dict) else resource
                             st.markdown(f"- {resource_name}")
