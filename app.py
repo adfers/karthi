@@ -15,7 +15,7 @@ import curriculum as curr
 import data_handler as dh
 import visualizations as viz
 import utils
-import sms_notifications
+import email_notifications
 
 # Page configuration
 st.set_page_config(
@@ -130,29 +130,29 @@ if not os.path.exists(DATA_FILE):
             "uploads": {},
             "time_spent": {},
             "resources_used": {},
-            "sms_settings": {
+            "email_settings": {
                 "enabled": False,
-                "phone_number": "",
+                "email": "",
                 "reminder_time": "09:00",
                 "missed_day_notification": True,
                 "daily_reminder": True
             }
         }, f, indent=4)
 
-# SMS notification checker
+# Email notification checker
 def check_and_send_notifications():
-    """Check if SMS notifications need to be sent and send them if needed."""
-    # Load data with SMS settings
+    """Check if email notifications need to be sent and send them if needed."""
+    # Load data with email settings
     data = dh.load_data()
-    sms_settings = data.get("sms_settings", {})
+    email_settings = data.get("email_settings", {})
     
-    # Check if SMS notifications are enabled
-    if not sms_settings.get("enabled", False):
+    # Check if email notifications are enabled
+    if not email_settings.get("enabled", False):
         return
     
-    # Get phone number
-    phone_number = sms_settings.get("phone_number", "")
-    if not phone_number:
+    # Get email address
+    email_address = email_settings.get("email", "")
+    if not email_address:
         return
     
     # Get current day info
@@ -165,13 +165,13 @@ def check_and_send_notifications():
     progress_data = dh.get_all_progress_data()
     
     # Check for missed days
-    if sms_settings.get("missed_day_notification", True):
-        sms_notifications.check_for_missed_days(phone_number, progress_data, day_info)
+    if email_settings.get("missed_day_notification", True):
+        email_notifications.check_for_missed_days(email_address, progress_data, day_info)
     
     # Check for daily reminders
-    if sms_settings.get("daily_reminder", True):
-        reminder_time = sms_settings.get("reminder_time", "09:00")
-        sms_notifications.check_and_send_daily_reminder(phone_number, reminder_time, day_info)
+    if email_settings.get("daily_reminder", True):
+        reminder_time = email_settings.get("reminder_time", "09:00")
+        email_notifications.check_and_send_daily_reminder(email_address, reminder_time, day_info)
 
 # Initialize data
 try:
@@ -185,7 +185,7 @@ def main():
     # Apply custom CSS
     local_css()
     
-    # Check for SMS notifications
+    # Check for email notifications
     check_and_send_notifications()
     
     # Sidebar
@@ -209,7 +209,7 @@ def main():
         st.subheader("Navigation")
         page = st.radio(
             "Go to:",
-            ["Dashboard", "Day Tracker", "Weekly View", "Notes & Reflections", "SMS Settings"]
+            ["Dashboard", "Day Tracker", "Weekly View", "Notes & Reflections", "Email Settings"]
         )
         
         # Additional resources
@@ -237,8 +237,8 @@ def main():
         show_weekly_view()
     elif page == "Notes & Reflections":
         show_notes_page()
-    elif page == "SMS Settings":
-        show_sms_settings()
+    elif page == "Email Settings":
+        show_email_settings()
 
 def show_dashboard():
     """Display the main dashboard with progress visualizations."""
@@ -601,47 +601,45 @@ def show_notes_page():
         href = f'<a href="data:text/plain;base64,{b64}" download="python_learning_notes.txt">Download Notes</a>'
         st.markdown(href, unsafe_allow_html=True)
 
-def show_sms_settings():
-    """Display SMS notification settings."""
-    st.header("SMS Reminder Settings")
+def show_email_settings():
+    """Display email notification settings."""
+    st.header("Email Reminder Settings")
     
     # Get current settings from session state or initialize
-    if 'phone_number' not in st.session_state:
-        st.session_state.phone_number = ""
-    if 'sms_enabled' not in st.session_state:
-        st.session_state.sms_enabled = False
+    if 'email' not in st.session_state:
+        st.session_state.email = ""
+    if 'email_enabled' not in st.session_state:
+        st.session_state.email_enabled = False
     if 'reminder_time' not in st.session_state:
         st.session_state.reminder_time = "09:00"  # Default 9:00 AM
+    if 'missed_day_notification' not in st.session_state:
+        st.session_state.missed_day_notification = True
+    if 'daily_reminder' not in st.session_state:
+        st.session_state.daily_reminder = True
     
-    # Check if Twilio is configured
-    twilio_client = sms_notifications.setup_twilio_client()
-    twilio_phone = os.environ.get("TWILIO_PHONE_NUMBER")
+    # Load saved settings
+    data = dh.load_data()
+    email_settings = data.get("email_settings", {})
     
-    if not twilio_client or not twilio_phone:
-        st.warning("⚠️ Twilio is not configured. To enable SMS notifications, you need to set up Twilio credentials.")
-        st.info("To configure Twilio, you need to set these environment variables: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER")
-        
-        # Show example of how to get these credentials
-        with st.expander("How to get Twilio credentials"):
-            st.markdown("""
-            1. Sign up for a Twilio account at [twilio.com](https://www.twilio.com/)
-            2. Get your Account SID and Auth Token from the Twilio Console
-            3. Buy a phone number or use a trial number from Twilio
-            4. Set these values as environment variables before running the app
-            """)
+    if email_settings:
+        st.session_state.email_enabled = email_settings.get("enabled", False)
+        st.session_state.email = email_settings.get("email", "")
+        st.session_state.reminder_time = email_settings.get("reminder_time", "09:00")
+        st.session_state.missed_day_notification = email_settings.get("missed_day_notification", True)
+        st.session_state.daily_reminder = email_settings.get("daily_reminder", True)
     
-    # SMS Settings form
-    with st.form("sms_settings_form"):
-        st.subheader("SMS Notification Preferences")
+    # Email Settings form
+    with st.form("email_settings_form"):
+        st.subheader("Email Notification Preferences")
         
-        # Enable/disable SMS notifications
-        sms_enabled = st.checkbox("Enable SMS notifications", value=st.session_state.sms_enabled)
+        # Enable/disable email notifications
+        email_enabled = st.checkbox("Enable email notifications", value=st.session_state.email_enabled)
         
-        # Phone number input
-        phone_number = st.text_input(
-            "Your phone number (format: +1XXXXXXXXXX):", 
-            value=st.session_state.phone_number,
-            help="Enter your phone number in international format, starting with + and country code"
+        # Email address input
+        email = st.text_input(
+            "Your email address:", 
+            value=st.session_state.email,
+            help="Enter your email address where you'd like to receive notifications"
         )
         
         # Reminder time
@@ -655,62 +653,77 @@ def show_sms_settings():
         st.subheader("Notification Types")
         missed_day_notification = st.checkbox(
             "Notify me if I miss a day", 
-            value=True,
-            help="Send an SMS if you haven't marked a day as completed"
+            value=st.session_state.missed_day_notification,
+            help="Send an email if you haven't marked a day as completed"
         )
         
         daily_reminder = st.checkbox(
             "Send daily reminders", 
-            value=True,
+            value=st.session_state.daily_reminder,
             help="Send a daily reminder about today's topic"
         )
         
-        # Test notification button
+        # Submit button
         submitted = st.form_submit_button("Save Settings")
         
         if submitted:
             # Save settings to session state
-            st.session_state.phone_number = phone_number
-            st.session_state.sms_enabled = sms_enabled
+            st.session_state.email = email
+            st.session_state.email_enabled = email_enabled
             st.session_state.reminder_time = reminder_time.strftime("%H:%M")
+            st.session_state.missed_day_notification = missed_day_notification
+            st.session_state.daily_reminder = daily_reminder
             
             # Save settings to data file
             data = dh.load_data()
-            if "sms_settings" not in data:
-                data["sms_settings"] = {}
+            if "email_settings" not in data:
+                data["email_settings"] = {}
                 
-            data["sms_settings"] = {
-                "enabled": sms_enabled,
-                "phone_number": phone_number,
+            data["email_settings"] = {
+                "enabled": email_enabled,
+                "email": email,
                 "reminder_time": reminder_time.strftime("%H:%M"),
                 "missed_day_notification": missed_day_notification,
                 "daily_reminder": daily_reminder
             }
             
             dh.save_data(data)
-            st.success("SMS settings saved successfully!")
+            st.success("Email settings saved successfully!")
     
-    # Test SMS button outside the form
-    if twilio_client and twilio_phone and st.session_state.phone_number and st.session_state.sms_enabled:
-        if st.button("Test SMS Notification"):
+    # Test email button outside the form
+    if st.session_state.email and st.session_state.email_enabled:
+        if st.button("Test Email Notification"):
             # Get current day info
             current_day = utils.get_current_day()
             day_info = utils.get_day_info(current_day)
             
             if day_info:
                 # Send a test message
-                test_message = f"🐍 Python Learning Tracker: This is a test message. Today's topic: {day_info['topic']}"
-                if sms_notifications.send_sms(st.session_state.phone_number, test_message):
-                    st.success("Test message sent successfully! Check your phone.")
+                test_subject = "Python Learning Tracker - Test Email"
+                test_message = f"""
+                <html>
+                <body>
+                <h2>Python Learning Tracker - Test Email</h2>
+                <p>This is a test email from your Python Learning Tracker app.</p>
+                <div style="background-color: #f0f8ff; padding: 15px; border-left: 5px solid #3366cc; margin: 10px 0;">
+                    <h3>Today's Topic: {day_info['topic']}</h3>
+                    <p><strong>Practice:</strong> {day_info['practice']}</p>
+                </div>
+                <p>If you received this, your email notifications are set up correctly!</p>
+                </body>
+                </html>
+                """
+                if email_notifications.send_email(st.session_state.email, test_subject, test_message):
+                    st.success("Test email sent successfully! Check your inbox (and spam folder).")
                 else:
-                    st.error("Failed to send test message. Please check your Twilio credentials and phone number.")
+                    st.error("Failed to send test email. Please check your email address.")
             else:
-                st.error("Could not get current day information for test message.")
+                st.error("Could not get current day information for test email.")
     
-    # Show information about SMS notifications
-    st.subheader("About SMS Notifications")
+    # Show information about email notifications
+    st.subheader("About Email Notifications")
     st.markdown("""
-    The Python Learning Tracker can send you SMS notifications to help you stay on track with your learning journey:
+    The Python Learning Tracker can send you email notifications to help you stay on track with your learning journey:
     
     1. **Missed Day Alerts**: Get notified if you miss a day of practice
     2. **Daily Reminders**: Receive a reminder about the day's topic
