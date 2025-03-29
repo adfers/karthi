@@ -148,3 +148,29 @@ def create_streak_calendar(progress_data):
     except Exception as e:
         print(f"Error creating streak calendar: {str(e)}")
         return go.Figure()
+def create_weekly_time_chart(weekly_time):
+    """Create a bar chart showing time spent by week."""
+    try:
+        if not isinstance(weekly_time, (list, tuple)) or len(weekly_time) != 3:
+            raise ValueError("Invalid weekly time data")
+            
+        weeks = [f"Week {i+1}" for i in range(len(weekly_time))]
+        fig = go.Figure(data=[
+            go.Bar(
+                x=weeks,
+                y=weekly_time,
+                marker_color='#4B89DC',
+                text=[f"{t:.1f}h" for t in weekly_time],
+                textposition='auto'
+            )
+        ])
+        fig.update_layout(
+            title="Time Spent by Week",
+            xaxis_title="Week",
+            yaxis_title="Hours",
+            height=300
+        )
+        return fig
+    except Exception as e:
+        print(f"Error creating weekly time chart: {e}")
+        return go.Figure()
