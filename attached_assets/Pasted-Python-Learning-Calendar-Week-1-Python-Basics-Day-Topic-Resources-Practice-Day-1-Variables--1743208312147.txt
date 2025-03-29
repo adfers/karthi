@@ -1,0 +1,197 @@
+Python Learning Calendar
+
+Week 1: Python Basics
+
+Day
+
+Topic
+
+Resources
+
+Practice
+
+Day 1
+
+Variables & Data Types
+
+W3Schools, Mosh's Video
+
+Write a script to store and print your name, age, and favorite number.
+
+Day 2
+
+Operators & Expressions
+
+Programiz, Corey Schafer's Video
+
+Write a calculator that adds, subtracts, multiplies, and divides two numbers.
+
+Day 3
+
+If Statements & Conditions
+
+Real Python, freeCodeCamp Video
+
+Create a program that checks if a number is positive, negative, or zero.
+
+Day 4
+
+Loops (for, while)
+
+W3Schools Loops, CS Dojo Video
+
+Print numbers from 1-10 using a loop. Print even numbers only.
+
+Day 5
+
+Functions
+
+Python Functions (Programiz), Mosh's Video
+
+Write a function that takes a number and returns its square.
+
+Day 6
+
+Lists & Strings
+
+W3Schools Lists, Corey Schafer's Video
+
+Reverse a string and find the largest number in a list.
+
+Day 7
+
+Mini Project (Basics)
+
+Use Replit to code
+
+Build a basic calculator or a number guessing game.
+
+Week 2: Intermediate Python
+
+Day
+
+Topic
+
+Resources
+
+Practice
+
+Day 8
+
+Dictionaries & Sets
+
+W3Schools Dictionaries, Corey Schafer Video
+
+Count word frequency in a sentence using a dictionary.
+
+Day 9
+
+File Handling
+
+Programiz, Mosh’s Video
+
+Read a file and count how many lines it has.
+
+Day 10
+
+Error Handling (try-except)
+
+Real Python, freeCodeCamp Video
+
+Create a program that handles division by zero errors.
+
+Day 11
+
+Modules (math, random)
+
+Python Modules Guide, Mosh's Video
+
+Generate a random password using random module.
+
+Day 12
+
+OOP Basics (Classes & Objects)
+
+Real Python, Mosh’s Video
+
+Create a Car class with attributes like brand and speed.
+
+Day 13
+
+APIs & JSON
+
+Requests Library (Real Python), Corey Schafer Video
+
+Fetch weather data from an API and display it.
+
+Day 14
+
+Mini Project
+
+Use Replit or Jupyter Notebook
+
+Build a To-Do List App or Weather App using API.
+
+Week 3: Advanced & Final Project
+
+Day
+
+Topic
+
+Resources
+
+Practice
+
+Day 15
+
+Recap & Debugging
+
+Use Pythontutor to visualize code execution
+
+Debug old programs and improve efficiency.
+
+Day 16
+
+Data Structures (Stacks, Queues)
+
+Real Python
+
+Implement a simple stack and queue in Python.
+
+Day 17
+
+Algorithms (Sorting & Searching)
+
+Khan Academy
+
+Implement Bubble Sort and Binary Search.
+
+Day 18
+
+Python Libraries (pandas, matplotlib)
+
+Pandas Docs, Matplotlib Tutorial
+
+Read a CSV file using Pandas and create a basic graph.
+
+Day 19
+
+Final Project Brainstorming
+
+Use Google Colab
+
+Plan a final project (Choose from ideas below).
+
+Day 20-21
+
+Final Project
+
+Use Replit or Jupyter Notebook
+
+Build a project like: Password Manager, Budget Tracker, or Simple Game.
+
+Additional Tools to Use Along the Way
+
+✅ Online Coding Editors: Replit, Jupyter Notebook, Google Colab
+✅ Practice & Challenges: HackerRank, LeetCode
+✅ Debugging & Visualization: Python
