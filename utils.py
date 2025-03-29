@@ -66,36 +66,47 @@ def get_upcoming_days(current_day, num_days=3):
 
 def calculate_learning_streak():
     """Calculate the current learning streak."""
-    progress_data = dh.get_all_progress_data()
-    
-    # Get completed days with dates
-    completed_days = [
-        datetime.strptime(d['completion_date'], "%Y-%m-%d").date() 
-        for d in progress_data 
-        if d['completed'] and d['completion_date']
-    ]
-    
-    if not completed_days:
+    try:
+        progress_data = dh.get_all_progress_data()
+        
+        # Get completed days with dates
+        completed_days = []
+        for d in progress_data:
+            try:
+                if d.get('completed', False) and d.get('completion_date'):
+                    date = datetime.strptime(d['completion_date'], "%Y-%m-%d").date()
+                    completed_days.append(date)
+            except (ValueError, TypeError):
+                # Skip dates that can't be parsed
+                continue
+        
+        if not completed_days:
+            return 0
+        
+        # Sort the dates
+        completed_days.sort()
+        
+        # Check if there's an entry for today
+        today = datetime.now().date()
+        streak = 1 if today in completed_days else 0
+        
+        # Count consecutive days backward from the most recent
+        check_date = today - timedelta(days=1)
+        
+        while check_date in completed_days:
+            streak += 1
+            check_date = check_date - timedelta(days=1)
+        
+        return streak
+    except Exception as e:
+        # Return 0 in case of any error
         return 0
-    
-    # Sort the dates
-    completed_days.sort()
-    
-    # Check if there's an entry for today
-    today = datetime.now().date()
-    streak = 1 if today in completed_days else 0
-    
-    # Count consecutive days backward from the most recent
-    check_date = today - timedelta(days=1)
-    
-    while check_date in completed_days:
-        streak += 1
-        check_date = check_date - timedelta(days=1)
-    
-    return streak
 
 def get_total_study_time():
     """Calculate the total study time across all days."""
-    progress_data = dh.get_all_progress_data()
-    total_minutes = sum(d['time_spent_minutes'] for d in progress_data)
-    return total_minutes
+    try:
+        progress_data = dh.get_all_progress_data()
+        total_minutes = sum(d.get('time_spent_minutes', 0) for d in progress_data)
+        return total_minutes
+    except Exception:
+        return 0

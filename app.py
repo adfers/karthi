@@ -7,6 +7,8 @@ from datetime import datetime
 import calendar
 import base64
 from io import StringIO
+import os
+import json
 
 # Import custom modules
 import curriculum as curr
@@ -22,8 +24,24 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Ensure data file exists
+DATA_FILE = "python_learning_progress.json"
+if not os.path.exists(DATA_FILE):
+    with open(DATA_FILE, 'w') as f:
+        json.dump({
+            "progress": {},
+            "notes": {},
+            "uploads": {},
+            "time_spent": {},
+            "resources_used": {}
+        }, f, indent=4)
+
 # Initialize data
-dh.initialize_data()
+try:
+    dh.initialize_data()
+except Exception as e:
+    st.error(f"Error initializing data: {e}")
+    st.info("Please refresh the page to try again.")
 
 # Main app layout
 def main():
@@ -103,9 +121,14 @@ def show_dashboard():
         current_day = utils.get_current_day()
         if current_day <= 21:
             day_info = utils.get_day_info(current_day)
-            st.subheader("Current Topic")
-            st.markdown(f"**Day {current_day}: {day_info['topic']}**")
-            st.markdown(f"*{day_info['practice']}*")
+            if day_info:
+                st.subheader("Current Topic")
+                st.markdown(f"**Day {current_day}: {day_info['topic']}**")
+                st.markdown(f"*{day_info['practice']}*")
+            else:
+                st.subheader("Current Day")
+                st.markdown(f"**Day {current_day}**")
+                st.markdown("*Topic information not available*")
         else:
             st.subheader("Congratulations!")
             st.markdown("You've completed the 21-day Python curriculum! 🎉")
@@ -138,13 +161,20 @@ def show_dashboard():
     st.subheader("Coming Up Next")
     upcoming = utils.get_upcoming_days(current_day)
     
-    for day in upcoming:
-        with st.expander(f"Day {day['day']}: {day['topic']}"):
-            st.markdown(f"**Week {day['week']}: {day['week_title']}**")
-            st.markdown(f"**Practice:** {day['practice']}")
-            st.markdown("**Resources:**")
-            for resource in day['resources']:
-                st.markdown(f"- {resource}")
+    if upcoming:
+        for day in upcoming:
+            try:
+                with st.expander(f"Day {day['day']}: {day['topic']}"):
+                    st.markdown(f"**Week {day['week']}: {day['week_title']}**")
+                    st.markdown(f"**Practice:** {day['practice']}")
+                    st.markdown("**Resources:**")
+                    for resource in day['resources']:
+                        st.markdown(f"- {resource}")
+            except (KeyError, TypeError):
+                # Skip days with missing data
+                continue
+    else:
+        st.info("No upcoming days available")
 
 def show_day_tracker():
     """Display the day tracker to mark completion and log time."""
@@ -165,52 +195,59 @@ def show_day_tracker():
     st.markdown(f"**Week {day_info['week']}: {day_info['week_title']}**")
     
     # Display completion status
-    progress_data = dh.get_all_progress_data()
-    day_data = progress_data[day_number-1]
-    is_completed = day_data['completed']
-    
-    # Columns for layout
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("### Practice Exercise")
-        st.markdown(f"{day_info['practice']}")
+    try:
+        progress_data = dh.get_all_progress_data()
+        day_data = progress_data[day_number-1] if day_number <= len(progress_data) else {"completed": False, "time_spent_minutes": 0}
+        is_completed = day_data.get('completed', False)
         
-        st.markdown("### Resources")
-        resources = day_info['resources']
-        resources_used = dh.get_resources_used(day_number)
+        # Columns for layout
+        col1, col2 = st.columns(2)
         
-        for resource in resources:
-            is_checked = resource in resources_used
-            if st.checkbox(resource, value=is_checked, key=f"resource_{day_number}_{resource}"):
-                if not is_checked:
-                    dh.mark_resource_used(day_number, resource)
-            else:
-                if is_checked:
-                    # Remove the resource from used resources
-                    data = dh.load_data()
-                    if str(day_number) in data["resources_used"]:
-                        if resource in data["resources_used"][str(day_number)]:
-                            data["resources_used"][str(day_number)].remove(resource)
-                            dh.save_data(data)
-    
-    with col2:
-        # Completion tracking
-        st.markdown("### Progress Tracking")
-        completed = st.checkbox("Mark as completed", value=is_completed)
+        with col1:
+            st.markdown("### Practice Exercise")
+            st.markdown(f"{day_info['practice']}")
+            
+            st.markdown("### Resources")
+            resources = day_info.get('resources', [])
+            resources_used = dh.get_resources_used(day_number)
+            
+            for resource in resources:
+                is_checked = resource in resources_used
+                if st.checkbox(resource, value=is_checked, key=f"resource_{day_number}_{resource}"):
+                    if not is_checked:
+                        dh.mark_resource_used(day_number, resource)
+                else:
+                    if is_checked:
+                        # Remove the resource from used resources
+                        data = dh.load_data()
+                        if str(day_number) in data["resources_used"]:
+                            if resource in data["resources_used"][str(day_number)]:
+                                data["resources_used"][str(day_number)].remove(resource)
+                                dh.save_data(data)
         
-        if completed != is_completed:
-            dh.mark_day_complete(day_number, completed)
-            st.success(f"Day {day_number} marked as {'completed' if completed else 'incomplete'}!")
-            st.rerun()
-        
-        # Time tracking
-        st.markdown("### Time Spent")
-        
-        # Get current time spent in minutes
-        time_spent_min = day_data['time_spent_minutes']
-        hours = time_spent_min // 60
-        minutes = time_spent_min % 60
+        with col2:
+            # Completion tracking
+            st.markdown("### Progress Tracking")
+            completed = st.checkbox("Mark as completed", value=is_completed)
+            
+            if completed != is_completed:
+                dh.mark_day_complete(day_number, completed)
+                st.success(f"Day {day_number} marked as {'completed' if completed else 'incomplete'}!")
+                st.rerun()
+            
+            # Time tracking
+            st.markdown("### Time Spent")
+            
+            # Get current time spent in minutes
+            time_spent_min = day_data.get('time_spent_minutes', 0)
+            hours = time_spent_min // 60
+            minutes = time_spent_min % 60
+    except Exception as e:
+        st.error(f"Error loading progress data: {e}")
+        st.info("Using default values instead.")
+        is_completed = False
+        hours = 0
+        minutes = 0
         
         col1, col2 = st.columns(2)
         with col1:
@@ -277,9 +314,18 @@ def show_weekly_view():
             for day in week_data['days']:
                 day_num = day['day']
                 # Get completion status
-                progress_data = dh.get_all_progress_data()
-                is_completed = progress_data[day_num-1]['completed']
-                completion_date = progress_data[day_num-1]['completion_date'] if is_completed else "-"
+                try:
+                    progress_data = dh.get_all_progress_data()
+                    if day_num <= len(progress_data):
+                        day_progress = progress_data[day_num-1]
+                        is_completed = day_progress.get('completed', False)
+                        completion_date = day_progress.get('completion_date', None) if is_completed else "-"
+                    else:
+                        is_completed = False
+                        completion_date = "-"
+                except Exception:
+                    is_completed = False
+                    completion_date = "-"
                 
                 week_df.append({
                     "Day": day_num,

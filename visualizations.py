@@ -143,63 +143,101 @@ def create_weekly_time_chart(weekly_time_data):
 
 def create_streak_calendar(progress_data):
     """Create a calendar view to visualize learning streaks."""
-    # Get today's date and the date from 30 days ago to show a month's view
-    today = datetime.now().date()
-    start_date = today - timedelta(days=30)
+    try:
+        # Get today's date and the date from 30 days ago to show a month's view
+        today = datetime.now().date()
+        start_date = today - timedelta(days=30)
+        
+        # Create a list of dates in the range
+        date_range = [(start_date + timedelta(days=i)) for i in range(31)]
+        
+        # Extract completion dates from progress data
+        completion_dates = []
+        for d in progress_data:
+            if d['completed'] and d['completion_date']:
+                try:
+                    date = datetime.strptime(d['completion_date'], "%Y-%m-%d").date()
+                    completion_dates.append(date)
+                except (ValueError, TypeError):
+                    # Skip invalid dates
+                    continue
+        
+        # Create a dict marking dates with completed activities
+        activity_count = {date: 0 for date in date_range}
+        for date in completion_dates:
+            if date in date_range:
+                activity_count[date] = 1
+        
+        # Convert to a format for the heatmap
+        dates = list(activity_count.keys())
+        counts = list(activity_count.values())
+        
+        # Group by week for better visualization
+        weeks = []
+        days = []
+        values = []
+        
+        for date, count in zip(dates, counts):
+            week_num = (date - start_date).days // 7
+            day_of_week = date.weekday()
+            weeks.append(week_num)
+            days.append(day_of_week)
+            values.append(count)
+        
+        # Create a pivot table
+        df = pd.DataFrame({
+            'Week': weeks,
+            'Day': days,
+            'Value': values
+        })
+        
+        # Handle empty dataframe case
+        if df.empty:
+            fig = go.Figure()
+            fig.update_layout(
+                title="Learning Streak Calendar (Last 30 Days)",
+                annotations=[dict(
+                    text="No activity data available yet",
+                    showarrow=False,
+                    xref="paper",
+                    yref="paper",
+                    x=0.5,
+                    y=0.5
+                )]
+            )
+            return fig
+        
+        pivot = df.pivot_table(index='Week', columns='Day', values='Value', fill_value=0)
+        
+        # Create the heatmap
+        day_names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        week_names = [f"W{i+1}" for i in range(len(pivot))]
+        
+        fig = px.imshow(
+            pivot,
+            labels=dict(x="Day of Week", y="Week", color="Activity"),
+            x=day_names,
+            y=week_names,
+            color_continuous_scale=['lightgrey', 'green'],
+            title="Learning Streak Calendar (Last 30 Days)"
+        )
+        
+        fig.update_layout(height=250, coloraxis_showscale=False)
+        
+        return fig
     
-    # Create a list of dates in the range
-    date_range = [(start_date + timedelta(days=i)) for i in range(31)]
-    
-    # Extract completion dates from progress data
-    completion_dates = [
-        datetime.strptime(d['completion_date'], "%Y-%m-%d").date() 
-        for d in progress_data if d['completed'] and d['completion_date']
-    ]
-    
-    # Create a dict marking dates with completed activities
-    activity_count = {date: 0 for date in date_range}
-    for date in completion_dates:
-        if date in date_range:
-            activity_count[date] = 1
-    
-    # Convert to a format for the heatmap
-    dates = list(activity_count.keys())
-    counts = list(activity_count.values())
-    
-    # Group by week for better visualization
-    weeks = []
-    days = []
-    values = []
-    
-    for date, count in zip(dates, counts):
-        week_num = (date - start_date).days // 7
-        day_of_week = date.weekday()
-        weeks.append(week_num)
-        days.append(day_of_week)
-        values.append(count)
-    
-    # Create a pivot table
-    df = pd.DataFrame({
-        'Week': weeks,
-        'Day': days,
-        'Value': values
-    })
-    
-    pivot = df.pivot_table(index='Week', columns='Day', values='Value', fill_value=0)
-    
-    # Create the heatmap
-    day_names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    week_names = [f"W{i+1}" for i in range(len(pivot))]
-    
-    fig = px.imshow(
-        pivot,
-        labels=dict(x="Day of Week", y="Week", color="Activity"),
-        x=day_names,
-        y=week_names,
-        color_continuous_scale=['lightgrey', 'green'],
-        title="Learning Streak Calendar (Last 30 Days)"
-    )
-    
-    fig.update_layout(height=250, coloraxis_showscale=False)
-    
-    return fig
+    except Exception as e:
+        # Fallback to a simple figure with error message
+        fig = go.Figure()
+        fig.update_layout(
+            title="Learning Streak Calendar (Last 30 Days)",
+            annotations=[dict(
+                text=f"Could not generate calendar view",
+                showarrow=False,
+                xref="paper",
+                yref="paper",
+                x=0.5,
+                y=0.5
+            )]
+        )
+        return fig
