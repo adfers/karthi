@@ -222,6 +222,7 @@ def show_dashboard():
             if day_info:
                 st.subheader("Current Topic")
                 st.markdown(f"**Day {current_day}: {day_info['topic']}**")
+                st.markdown(f"**Scheduled for: {day_info['formatted_date']}**")
                 st.markdown(f"*{day_info['practice']}*")
             else:
                 st.subheader("Current Day")
@@ -265,6 +266,7 @@ def show_dashboard():
                 with st.expander(f"Day {day['day']}: {day['topic']}"):
                     st.markdown(f"""<div class="day-card">
                     <p><strong>Week {day['week']}:</strong> {day['week_title']}</p>
+                    <p><strong>Scheduled for:</strong> {day['formatted_date']}</p>
                     <p><strong>Practice:</strong> {day['practice']}</p>
                     <p><strong>Resources:</strong></p>
                     </div>
@@ -299,7 +301,10 @@ def show_day_tracker():
     
     # Display day details
     st.subheader(f"Day {day_number}: {day_info['topic']}")
-    st.markdown(f"**Week {day_info['week']}: {day_info['week_title']}**")
+    st.markdown(f"""
+    **Week {day_info['week']}: {day_info['week_title']}**  
+    **Scheduled Date:** {day_info['formatted_date']}
+    """)
     
     # Display completion status
     try:
@@ -449,7 +454,13 @@ def show_weekly_view():
                 
                 # Create an expander for each day
                 status_icon = "✅" if is_completed else "❌"
+                
+                # Get the day info for scheduled date
+                day_info = utils.get_day_info(day_num)
+                scheduled_date = day_info.get('formatted_date', 'N/A') if day_info else 'N/A'
+                
                 with st.expander(f"Day {day_num}: {day['topic']} {status_icon}"):
+                    st.markdown(f"**Scheduled Date:** {scheduled_date}")
                     st.markdown(f"**Practice Exercise:** {day['practice']}")
                     
                     # Resources with links
@@ -483,9 +494,14 @@ def show_weekly_view():
                 except Exception:
                     is_completed = False
                 
+                # Get day info for the scheduled date
+                day_info = utils.get_day_info(day_num)
+                scheduled_date = day_info.get('formatted_date', 'N/A').split(',')[0] if day_info else 'N/A'
+                
                 week_df.append({
                     "Day": day_num,
                     "Topic": day['topic'],
+                    "Scheduled": scheduled_date,
                     "Status": "✅ Completed" if is_completed else "❌ Incomplete"
                 })
             
@@ -519,7 +535,7 @@ def show_notes_page():
             
         with st.expander(f"Day {day}: {day_info['topic']}"):
             st.markdown(notes[str(day)])
-            st.caption(f"Week {day_info['week']}: {day_info['week_title']}")
+            st.caption(f"Week {day_info['week']}: {day_info['week_title']} | Scheduled: {day_info['formatted_date']}")
     
     # Export option
     if st.button("Export All Notes"):
@@ -528,7 +544,8 @@ def show_notes_page():
             day_info = utils.get_day_info(day)
             if day_info:
                 notes_text += f"# Day {day}: {day_info['topic']}\n"
-                notes_text += f"Week {day_info['week']}: {day_info['week_title']}\n\n"
+                notes_text += f"Week {day_info['week']}: {day_info['week_title']}\n"
+                notes_text += f"Scheduled Date: {day_info['formatted_date']}\n\n"
                 notes_text += f"{notes[str(day)]}\n\n"
                 notes_text += "-" * 50 + "\n\n"
         
