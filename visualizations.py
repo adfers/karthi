@@ -65,8 +65,12 @@ def create_weekly_progress_chart(weekly_progress):
 def create_progress_heatmap(progress_data):
     """Create a heatmap showing daily progress."""
     try:
-        if not progress_data or not isinstance(progress_data, list):
-            raise ValueError("Invalid progress data")
+        if not isinstance(progress_data, list):
+            progress_data = []
+
+        # Ensure we have data for all 21 days
+        while len(progress_data) < 21:
+            progress_data.append({'completed': False})
 
         days = list(range(1, 22))
         completion = [1 if d.get('completed', False) else 0 for d in progress_data]
@@ -151,8 +155,13 @@ def create_streak_calendar(progress_data):
 def create_weekly_time_chart(weekly_time):
     """Create a bar chart showing time spent by week."""
     try:
-        if not isinstance(weekly_time, (list, tuple)) or len(weekly_time) != 3:
-            raise ValueError("Invalid weekly time data")
+        if not isinstance(weekly_time, (list, tuple)):
+            weekly_time = [0, 0, 0]  # Default empty data
+        
+        # Ensure we have exactly 3 weeks of data
+        weekly_time = list(weekly_time)[:3]  # Take first 3 weeks
+        while len(weekly_time) < 3:
+            weekly_time.append(0)  # Pad with zeros if needed
             
         weeks = [f"Week {i+1}" for i in range(len(weekly_time))]
         fig = go.Figure(data=[
