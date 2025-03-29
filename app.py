@@ -9,6 +9,9 @@ import base64
 from io import StringIO
 import os
 import json
+import time
+import gc
+from functools import lru_cache
 
 # Import custom modules
 import curriculum as curr
@@ -16,6 +19,13 @@ import data_handler as dh
 import visualizations as viz
 import utils
 import email_notifications
+
+# Performance optimization settings
+# Enable garbage collection to free memory
+gc.enable()
+# Set session state for performance tracking
+if 'last_notification_check' not in st.session_state:
+    st.session_state.last_notification_check = time.time() - 3600  # Set to 1 hour ago initially
 
 # Page configuration
 st.set_page_config(
@@ -191,38 +201,57 @@ if not os.path.exists(DATA_FILE):
         }, f, indent=4)
 
 # Email notification checker
+@lru_cache(maxsize=1)
+def should_check_notifications():
+    """Determine if we should check notifications based on time elapsed."""
+    # Only check notifications every hour to reduce app resource usage
+    current_time = time.time()
+    if current_time - st.session_state.last_notification_check >= 3600:  # 1 hour
+        st.session_state.last_notification_check = current_time
+        return True
+    return False
+
 def check_and_send_notifications():
     """Check if email notifications need to be sent and send them if needed."""
-    # Load data with email settings
-    data = dh.load_data()
-    email_settings = data.get("email_settings", {})
-    
-    # Check if email notifications are enabled
-    if not email_settings.get("enabled", False):
+    # Performance optimization - only check periodically
+    if not should_check_notifications():
         return
-    
-    # Get email address
-    email_address = email_settings.get("email", "")
-    if not email_address:
-        return
-    
-    # Get current day info
-    current_day = utils.get_current_day()
-    day_info = utils.get_day_info(current_day)
-    if not day_info:
-        return
-    
-    # Get all progress data
-    progress_data = dh.get_all_progress_data()
-    
-    # Check for missed days
-    if email_settings.get("missed_day_notification", True):
-        email_notifications.check_for_missed_days(email_address, progress_data, day_info)
-    
-    # Check for daily reminders
-    if email_settings.get("daily_reminder", True):
-        reminder_time = email_settings.get("reminder_time", "09:00")
-        email_notifications.check_and_send_daily_reminder(email_address, reminder_time, day_info)
+        
+    try:
+        # Load data with email settings
+        data = dh.load_data()
+        email_settings = data.get("email_settings", {})
+        
+        # Check if email notifications are enabled
+        if not email_settings.get("enabled", False):
+            return
+        
+        # Get email address
+        email_address = email_settings.get("email", "")
+        if not email_address:
+            return
+        
+        # Get current day info
+        current_day = utils.get_current_day()
+        day_info = utils.get_day_info(current_day)
+        if not day_info:
+            return
+        
+        # Get all progress data
+        progress_data = dh.get_all_progress_data()
+        
+        # Check for missed days
+        if email_settings.get("missed_day_notification", True):
+            email_notifications.check_for_missed_days(email_address, progress_data, day_info)
+        
+        # Check for daily reminders
+        if email_settings.get("daily_reminder", True):
+            reminder_time = email_settings.get("reminder_time", "09:00")
+            email_notifications.check_and_send_daily_reminder(email_address, reminder_time, day_info)
+    except Exception as e:
+        # Silently handle exceptions in notification checks to prevent app crashes
+        print(f"Error checking notifications: {e}")
+        # Don't raise the exception to avoid crashing the app
 
 # Initialize data
 try:

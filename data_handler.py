@@ -3,11 +3,18 @@ Module to handle the data operations for the Python learning tracker.
 """
 import json
 import os
+import time
 from datetime import datetime
+from functools import lru_cache
 import pandas as pd
 
 # Default data file path
 DATA_FILE = "python_learning_progress.json"
+
+# Cache settings
+DATA_CACHE_TTL = 60  # Cache data for 60 seconds
+_data_cache = None
+_last_load_time = 0
 
 def initialize_data():
     """Initialize the data structure if it doesn't exist."""
@@ -34,18 +41,54 @@ def initialize_data():
     return data
 
 def load_data():
-    """Load the data from the JSON file."""
+    """Load the data from the JSON file with caching for performance."""
+    global _data_cache, _last_load_time
+    
+    current_time = time.time()
+    
+    # If we have a valid cache, use it
+    if _data_cache is not None and (current_time - _last_load_time) < DATA_CACHE_TTL:
+        return _data_cache
+    
     try:
         with open(DATA_FILE, 'r') as f:
-            return json.load(f)
+            data = json.load(f)
+            _data_cache = data
+            _last_load_time = current_time
+            return data
     except (FileNotFoundError, json.JSONDecodeError):
         # If file doesn't exist or is corrupted, initialize a new one
-        return initialize_data()
+        new_data = initialize_data()
+        _data_cache = new_data
+        _last_load_time = current_time
+        return new_data
+
+# Save throttling
+_last_save_time = 0 
+SAVE_THROTTLE = 2  # Minimum seconds between saves
 
 def save_data(data):
-    """Save the data to the JSON file."""
-    with open(DATA_FILE, 'w') as f:
-        json.dump(data, f, indent=4)
+    """Save the data to the JSON file with throttling."""
+    global _data_cache, _last_load_time, _last_save_time
+    
+    current_time = time.time()
+    
+    # Update cache immediately
+    _data_cache = data
+    _last_load_time = current_time
+    
+    # Throttle saves to prevent excessive disk I/O
+    if current_time - _last_save_time < SAVE_THROTTLE:
+        return data
+    
+    try:
+        with open(DATA_FILE, 'w') as f:
+            json.dump(data, f, indent=4)
+        _last_save_time = current_time
+    except Exception as e:
+        print(f"Error saving data: {e}")
+        
+    return data
 
 def mark_day_complete(day_number, completed=True):
     """Mark a specific day as completed or incomplete."""

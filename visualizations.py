@@ -5,41 +5,102 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
+from functools import lru_cache
 from datetime import datetime, timedelta
-import numpy as np
+import gc
 
+# Enable garbage collection for better memory management
+gc.enable()
+
+# Visualization constants
+CHART_HEIGHT_SMALL = 200
+CHART_HEIGHT_MEDIUM = 250
+CHART_HEIGHT_LARGE = 300
+CHART_CONFIG = {'staticPlot': True, 'displayModeBar': False}
+
+@lru_cache(maxsize=4)  # Cache the last 4 calls
+def _create_progress_heatmap(progress_data_tuple):
+    """Create a heatmap showing the completion status for each day.
+    
+    Args:
+        progress_data_tuple: A tuple representation of progress data for caching
+        
+    Returns:
+        A plotly figure object
+    """
+    # Convert tuple back to list of dicts for processing
+    progress_data = []
+    for item_tuple in progress_data_tuple:
+        item_dict = {}
+        for k, v in item_tuple:
+            item_dict[k] = v
+        progress_data.append(item_dict)
+    
+    try:
+        # Convert progress data to a format suitable for a heatmap
+        days = [f"Day {d['day']}" for d in progress_data]
+        completion = [1 if d['completed'] else 0 for d in progress_data]
+        
+        # Create a DataFrame with the data
+        df = pd.DataFrame({
+            'Day': days,
+            'Completed': completion
+        })
+        
+        # Create the heatmap using Plotly
+        fig = px.imshow(
+            df['Completed'].values.reshape(1, -1),
+            y=['Progress'],
+            x=days,
+            color_continuous_scale=['lightgrey', 'green'],
+            range_color=[0, 1],
+            labels=dict(color="Completed")
+        )
+        
+        fig.update_layout(
+            height=CHART_HEIGHT_SMALL,
+            title="Curriculum Progress",
+            coloraxis_showscale=False,
+            xaxis_title=None,
+            yaxis_title=None
+        )
+        
+        return fig
+    except Exception as e:
+        # Provide a simple fallback in case of errors
+        print(f"Error creating progress heatmap: {e}")
+        fig = go.Figure()
+        fig.add_annotation(
+            text="Could not generate progress chart",
+            showarrow=False,
+            xref="paper", yref="paper",
+            x=0.5, y=0.5
+        )
+        fig.update_layout(height=CHART_HEIGHT_SMALL)
+        return fig
+        
+# Wrapper function to handle the tuple conversion for caching
 def create_progress_heatmap(progress_data):
-    """Create a heatmap showing the completion status for each day."""
-    # Convert progress data to a format suitable for a heatmap
-    days = [f"Day {d['day']}" for d in progress_data]
-    completion = [1 if d['completed'] else 0 for d in progress_data]
-    
-    # Create a DataFrame with the data
-    df = pd.DataFrame({
-        'Day': days,
-        'Completed': completion
-    })
-    
-    # Create the heatmap using Plotly
-    fig = px.imshow(
-        df['Completed'].values.reshape(1, -1),
-        y=['Progress'],
-        x=days,
-        color_continuous_scale=['lightgrey', 'green'],
-        range_color=[0, 1],
-        labels=dict(color="Completed")
-    )
-    
-    fig.update_layout(
-        height=200,
-        title="Curriculum Progress",
-        coloraxis_showscale=False,
-        xaxis_title=None,
-        yaxis_title=None
-    )
-    
-    return fig
+    """Wrapper function for the cached progress heatmap function."""
+    try:
+        # Convert list of dicts to tuple of tuples for caching
+        progress_tuples = tuple(
+            tuple((k, v) for k, v in d.items())
+            for d in progress_data
+        )
+        return _create_progress_heatmap(progress_tuples)
+    except Exception as e:
+        # If caching fails, fall back to direct rendering
+        print(f"Caching error in progress heatmap: {e}")
+        fig = go.Figure()
+        fig.add_annotation(
+            text="Could not generate progress chart",
+            showarrow=False,
+            xref="paper", yref="paper",
+            x=0.5, y=0.5
+        )
+        fig.update_layout(height=CHART_HEIGHT_SMALL)
+        return fig
 
 def create_weekly_progress_chart(weekly_progress):
     """Create a bar chart showing progress by week."""

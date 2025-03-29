@@ -2,6 +2,16 @@
 headless = true
 address = "0.0.0.0"
 port = 5000
+maxUploadSize = 5
+enableCORS = true
+enableXsrfProtection = true
+maxMessageSize = 200
+enableWebsocketCompression = true
+
+[browser]
+gatherUsageStats = false
+serverAddress = "0.0.0.0"
+serverPort = 5000
 
 [theme]
 primaryColor = "#4B89DC"  # Blue
@@ -9,3 +19,17 @@ backgroundColor = "#F7F9FC"  # Light gray
 secondaryBackgroundColor = "#E3E8F0"  # Slightly darker gray
 textColor = "#222222"  # Dark gray for text
 font = "sans serif"
+
+[runner]
+magicEnabled = true
+fastReruns = true
+
+[client]
+showErrorDetails = true
+toolbarMode = "minimal"
+
+[global]
+developmentMode = false
+logLevel = "error"
+disableWatchdogWarning = true
+dataFrameSerialization = "arrow"
