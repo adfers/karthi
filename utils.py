@@ -1,0 +1,101 @@
+"""
+Utility functions for the Python learning tracker.
+"""
+import streamlit as st
+from datetime import datetime, timedelta
+import curriculum as curr
+import data_handler as dh
+
+def get_current_day():
+    """Get the current day in the curriculum based on progress."""
+    progress_data = dh.get_all_progress_data()
+    
+    # Find the first incomplete day
+    for day_data in progress_data:
+        if not day_data['completed']:
+            return day_data['day']
+    
+    # If all are complete, return the last day
+    return 21
+
+def format_time_display(minutes):
+    """Format minutes into hours and minutes for display."""
+    hours = minutes // 60
+    remaining_minutes = minutes % 60
+    
+    if hours == 0:
+        return f"{remaining_minutes} min"
+    elif remaining_minutes == 0:
+        return f"{hours} hr"
+    else:
+        return f"{hours} hr {remaining_minutes} min"
+
+def get_day_info(day_number):
+    """Get all information about a specific day."""
+    curriculum = curr.get_curriculum_data()
+    
+    # Find the day in the curriculum
+    week_index = (day_number - 1) // 7
+    day_in_week_index = (day_number - 1) % 7
+    
+    try:
+        week_data = curriculum[week_index]
+        day_data = week_data["days"][day_in_week_index]
+        
+        return {
+            "day": day_number,
+            "week": week_index + 1,
+            "week_title": week_data["title"],
+            "topic": day_data["topic"],
+            "resources": day_data["resources"],
+            "practice": day_data["practice"]
+        }
+    except (IndexError, KeyError):
+        return None
+
+def get_upcoming_days(current_day, num_days=3):
+    """Get information about upcoming days in the curriculum."""
+    upcoming = []
+    
+    for day_num in range(current_day, min(current_day + num_days, 22)):
+        day_info = get_day_info(day_num)
+        if day_info:
+            upcoming.append(day_info)
+    
+    return upcoming
+
+def calculate_learning_streak():
+    """Calculate the current learning streak."""
+    progress_data = dh.get_all_progress_data()
+    
+    # Get completed days with dates
+    completed_days = [
+        datetime.strptime(d['completion_date'], "%Y-%m-%d").date() 
+        for d in progress_data 
+        if d['completed'] and d['completion_date']
+    ]
+    
+    if not completed_days:
+        return 0
+    
+    # Sort the dates
+    completed_days.sort()
+    
+    # Check if there's an entry for today
+    today = datetime.now().date()
+    streak = 1 if today in completed_days else 0
+    
+    # Count consecutive days backward from the most recent
+    check_date = today - timedelta(days=1)
+    
+    while check_date in completed_days:
+        streak += 1
+        check_date = check_date - timedelta(days=1)
+    
+    return streak
+
+def get_total_study_time():
+    """Calculate the total study time across all days."""
+    progress_data = dh.get_all_progress_data()
+    total_minutes = sum(d['time_spent_minutes'] for d in progress_data)
+    return total_minutes
